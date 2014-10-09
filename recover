@@ -1,0 +1,32 @@
+/**
+ * recover.c
+ *
+ * Computer Science 50
+ * Problem Set 5
+ *
+ * Recovers JPEGs from a forensic image.
+ */
+ 
+ #include<stdio.h>
+ 
+ #define JPEG_COUNT 50
+ #define BLOCKSIZE 512
+
+int main(int argc, char* argv[])
+{
+	// declare block size 
+	char* buffer = malloc(BLOCKSIZE);
+
+    // open and check card 
+    FILE* card = fopen("card.raw", "r");
+    if (card == NULL)
+    {
+        printf("Failed to open card.\n");
+        return -1;
+    }
+
+    fread(&buffer, BLOCKSIZE, 1, card);
+
+    // creating a file
+    int filename;
+}
