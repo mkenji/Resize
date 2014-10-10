@@ -7,17 +7,19 @@
  * Recovers JPEGs from a forensic image.
  */
  
- #include<stdio.h>
- 
- #define JPEG_COUNT 50
+ #include <stdio.h>
+ #include <stdint.h>
+
  #define BLOCKSIZE 512
+
+ typedef uint8_t BYTE;
 
 int main(int argc, char* argv[])
 {
-	// declare block size 
-	char* buffer = malloc(BLOCKSIZE);
+	// create a buffer of 512 Bytes
+	BYTE buffer[BLOCKSIZE];
 
-    // open and check card 
+    // open card, check if fopen is successful 
     FILE* card = fopen("card.raw", "r");
     if (card == NULL)
     {
@@ -25,8 +27,52 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    fread(&buffer, BLOCKSIZE, 1, card);
+    // initialize a JPEG file
+    FILE* jpeg = NULL;
 
-    // creating a file
-    int filename;
+    // initialize name and counter 
+    char filename[8];
+    int counter = 0;
+    
+    // scan through card, 1 block at a time (512 Bytes) until end of file
+    while (fread(&buffer, BLOCKSIZE, 1, card) == 1)
+    {
+        // Start of a JPEG - check if current buffer marks the start of a JPEG pattern
+        if ((buffer[0] == 0xff && buffer[1] == 0xd8 && buffer[2] == 0xff) && (buffer[3] == 0xe0 || buffer[3] == 0xe1)) 
+       	{
+       		// close JPEG file if there's one opened
+       		if (jpeg != NULL)
+       			fclose(jpeg);
+
+       		// create JPEG file name
+       		sprintf(filename, "%03d.jpg", counter);
+
+       		// create new JPEG file 
+       		jpeg = fopen(filename, "w");
+       		if (jpeg == NULL)
+       		{
+       			printf("Failed to create a JPEG file.\n");
+       			return -1;
+       		}
+
+       		// write current buffer to JPEG file
+       		fwrite(&buffer, BLOCKSIZE, 1, jpeg);
+
+       		// update filename
+       		counter++;
+       	}
+
+       	// write current buffer to JPEG file if there's one opened
+       	if (jpeg != NULL)
+       	{
+       		fwrite(&buffer, BLOCKSIZE, 1, jpeg);
+       	}
+    }
+
+    // close files
+    fclose(card);
+    fclose(jpeg);
+       	
 }
+
+
